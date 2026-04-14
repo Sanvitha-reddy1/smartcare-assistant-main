@@ -3,12 +3,13 @@ from flask_cors import CORS
 import pandas as pd
 from pymongo import MongoClient
 import joblib
+from dotenv import load_dotenv
+import os
 
-client = MongoClient(
-    "mongodb+srv://sanvithareddygottam_db_user:fCHqd8m1TH5MqHd0@cluster0.zsqlqiw.mongodb.net/?appName=Cluster0",
-    tls=True,
-    tlsAllowInvalidCertificates=True
-)
+load_dotenv()
+
+client = MongoClient(os.getenv("MONGO_URI"))
+
 db = client["health_db"]
 history_collection = db["history"]
 
