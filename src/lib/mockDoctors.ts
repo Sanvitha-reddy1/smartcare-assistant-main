@@ -15,24 +15,55 @@ export interface Pharmacy {
   open: boolean;
 }
 
+const firstNames = ["Sarah", "Raj", "Emily", "Michael", "Anita", "David", "Priya", "John", "Maria", "James", "Elena", "Daniel"];
+const lastNames = ["Johnson", "Patel", "Chen", "Brown", "Sharma", "Smith", "Garcia", "Williams", "Kim", "Lee", "Ali", "Gomez"];
+const clinicNames = ["City Medical Center", "HealthPlus Clinic", "Heart Care Hospital", "Digestive Health Center", "Breathing Well Clinic", "Wellness Care Center", "Prime Health Clinic", "CareFirst Hospital"];
+
 export function getDoctors(specialization: string): Doctor[] {
-  const doctors: Doctor[] = [
-    { id: "1", name: "Dr. Sarah Johnson", specialization: "General Physician", location: "City Medical Center, 2.1 km", availability: "Mon–Fri, 9AM–5PM", rating: 4.8 },
-    { id: "2", name: "Dr. Raj Patel", specialization: "General Physician", location: "HealthPlus Clinic, 3.4 km", availability: "Mon–Sat, 10AM–6PM", rating: 4.6 },
-    { id: "3", name: "Dr. Emily Chen", specialization: "Cardiologist", location: "Heart Care Hospital, 5.2 km", availability: "Tue–Sat, 8AM–4PM", rating: 4.9 },
-    { id: "4", name: "Dr. Michael Brown", specialization: "Gastroenterologist", location: "Digestive Health Center, 4.0 km", availability: "Mon–Fri, 9AM–3PM", rating: 4.7 },
-    { id: "5", name: "Dr. Anita Sharma", specialization: "Pulmonologist", location: "Breathing Well Clinic, 3.8 km", availability: "Wed–Sun, 10AM–5PM", rating: 4.5 },
-  ];
-  const lower = specialization.toLowerCase();
-  const matched = doctors.filter((d) => d.specialization.toLowerCase().includes(lower));
-  return matched.length > 0 ? matched : doctors.slice(0, 3);
+  const count = Math.floor(Math.random() * 3) + 3; // 3 to 5 doctors
+  const docs: Doctor[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const clinic = clinicNames[Math.floor(Math.random() * clinicNames.length)];
+    const dist = (Math.random() * 8 + 1).toFixed(1);
+    const rating = (Math.random() * 1 + 4).toFixed(1);
+    
+    docs.push({
+      id: Math.random().toString(36).substring(2, 10),
+      name: `Dr. ${fn} ${ln}`,
+      specialization: specialization,
+      location: `${clinic}, ${dist} km`,
+      availability: "Available Today",
+      rating: parseFloat(rating)
+    });
+  }
+  
+  return docs.sort((a, b) => b.rating - a.rating);
 }
 
+const pharmacyNames = [
+  "MedPlus Pharmacy", "Apollo Pharmacy", "Care & Cure Pharmacy", 
+  "LifeLine Pharmacy", "GreenCross Pharmacy", "City Care Meds", 
+  "QuickHeal Pharmacy", "TrustMeds Pharmacy", "Neighborhood Rx"
+];
+
 export function getPharmacies(): Pharmacy[] {
-  return [
-    { id: "1", name: "MedPlus Pharmacy", location: "12 Main Street", distance: "0.8 km", open: true },
-    { id: "2", name: "Apollo Pharmacy", location: "45 Health Avenue", distance: "1.2 km", open: true },
-    { id: "3", name: "Care & Cure Pharmacy", location: "78 Park Road", distance: "2.5 km", open: false },
-    { id: "4", name: "LifeLine Pharmacy", location: "23 Market Lane", distance: "3.1 km", open: true },
-  ];
+  const count = Math.floor(Math.random() * 3) + 4; // 4 to 6 pharmacies
+  const pharms: Pharmacy[] = [];
+  const selectedNames = [...pharmacyNames].sort(() => 0.5 - Math.random()).slice(0, count);
+  
+  for (let i = 0; i < count; i++) {
+    const dist = (Math.random() * 6 + 0.5).toFixed(1);
+    const isOpen = Math.random() > 0.2; // 80% chance open
+    pharms.push({
+      id: Math.random().toString(36).substring(2, 10),
+      name: selectedNames[i],
+      location: `${Math.floor(Math.random() * 99) + 1} Health Ave`,
+      distance: `${dist} km`,
+      open: isOpen
+    });
+  }
+  return pharms.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
 }
