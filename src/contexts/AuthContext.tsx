@@ -5,18 +5,20 @@ interface User {
   fullName: string;
   email: string;
   phone: string;
+  role: "patient" | "doctor" | "pharmacist";
   age?: number;
   gender?: string;
   height?: string;
   weight?: string;
   avatarUrl?: string;
+  location?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (data: { fullName: string; email: string; phone: string; password: string }) => Promise<boolean>;
+  signup: (data: { fullName: string; email: string; phone: string; password: string; role: "patient" | "doctor" | "pharmacist" }) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
 }
@@ -25,47 +27,120 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem("smartcare_user");
-    return stored ? JSON.parse(stored) : null;
+    const stored = localStorage.getItem("user") || localStorage.getItem("smartcare_user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        id: parsed.id,
+        fullName: parsed.name || parsed.fullName || "",
+        email: parsed.email || "",
+        phone: parsed.phone || "",
+        role: parsed.role || "patient",
+        location: parsed.location || "",
+      };
+    }
+    return null;
   });
 
-  const login = async (email: string, _password: string): Promise<boolean> => {
-    await new Promise((r) => setTimeout(r, 1200));
-    const stored = localStorage.getItem("smartcare_users");
-    const users: Record<string, any> = stored ? JSON.parse(stored) : {};
-    const found = Object.values(users).find((u: any) => u.email === email);
-    if (!found) return false;
-    setUser(found as User);
-    localStorage.setItem("smartcare_user", JSON.stringify(found));
-    return true;
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      console.log("Login request:", email, password);
+      const res = await fetch("http://127.0.0.1:5000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        console.error("Login failed:", await res.json());
+        return false;
+      }
+
+      const data = await res.json();
+      console.log("Response:", data);
+
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      const loggedInUser: User = {
+        id: data.user.id,
+        fullName: data.user.name,
+        email: data.user.email,
+        phone: data.user.phone || "",
+        role: data.user.role,
+        location: data.user.location || "",
+        age: data.user.age || undefined,
+        gender: data.user.gender || undefined,
+        height: data.user.height || undefined,
+        weight: data.user.weight || undefined,
+      };
+
+      setUser(loggedInUser);
+      return true;
+    } catch (error) {
+      console.error("Error logging in:", error);
+      return false;
+    }
   };
 
-  const signup = async (data: { fullName: string; email: string; phone: string; password: string }): Promise<boolean> => {
-    await new Promise((r) => setTimeout(r, 1200));
-    const newUser: User = { id: crypto.randomUUID(), ...data };
-    const stored = localStorage.getItem("smartcare_users");
-    const users: Record<string, any> = stored ? JSON.parse(stored) : {};
-    users[newUser.id] = newUser;
-    localStorage.setItem("smartcare_users", JSON.stringify(users));
-    setUser(newUser);
-    localStorage.setItem("smartcare_user", JSON.stringify(newUser));
-    return true;
+  const signup = async (data: { fullName: string; email: string; phone: string; password: string; role: "patient" | "doctor" | "pharmacist" }): Promise<boolean> => {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.fullName,
+          email: data.email,
+          password: data.password,
+          role: data.role
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Signup failed:", await res.json());
+        return false;
+      }
+
+      // After successful signup, log them in directly
+      return await login(data.email, data.password);
+    } catch (error) {
+      console.error("Error signing up:", error);
+      return false;
+    }
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem("user");
     localStorage.removeItem("smartcare_user");
   };
 
-  const updateProfile = (data: Partial<User>) => {
+  const updateProfile = async (data: Partial<User>) => {
     if (!user) return;
     const updated = { ...user, ...data };
+    
+    // Optimistic UI update
     setUser(updated);
-    localStorage.setItem("smartcare_user", JSON.stringify(updated));
-    const stored = localStorage.getItem("smartcare_users");
-    const users: Record<string, any> = stored ? JSON.parse(stored) : {};
-    users[updated.id] = updated;
-    localStorage.setItem("smartcare_users", JSON.stringify(users));
+    localStorage.setItem("user", JSON.stringify(updated));
+
+    // Persist to backend
+    try {
+      await fetch("http://127.0.0.1:5000/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          name: updated.fullName,
+          phone: updated.phone,
+          age: updated.age,
+          gender: updated.gender,
+          height: updated.height,
+          weight: updated.weight,
+          location: updated.location
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to sync profile update to backend:", err);
+    }
   };
 
   return (

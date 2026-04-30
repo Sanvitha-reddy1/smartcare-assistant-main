@@ -34,7 +34,8 @@ const SymptomAnalysis = () => {
   const [duration, setDuration] = useState("");
   const [durationUnit, setDurationUnit] = useState("days");
   const [severity, setSeverity] = useState("");
-  const [results, setResults] = useState<ReturnType<typeof analyzeSymptoms> | null>(null);
+  const [location, setLocation] = useState(user?.location || "");
+  const [results, setResults] = useState<any | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
   // Modal states
@@ -73,19 +74,44 @@ const SymptomAnalysis = () => {
     if (symptomInput.trim()) all.push(symptomInput.trim());
     if (all.length === 0) return;
     setAnalyzing(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    const analysisResults = analyzeSymptoms(all);
-    setResults(analysisResults);
-    addToHistory({
-      symptoms: all,
-      disease: analysisResults.disease,
-      severity: analysisResults.severity,
-      doctorType: analysisResults.doctorType,
-    });
+    
+    try {
+      const res = await fetch("http://127.0.0.1:5000/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          symptoms: all,
+          userId: user?.id,
+          location: location
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to analyze symptoms");
+
+      const data = await res.json();
+      setResults(data);
+      
+      // Update suggestions if the backend returned related symptoms
+      if (data.relatedSymptoms) {
+        setSuggestions(data.relatedSymptoms);
+      }
+
+      // We still update local history for immediate UI reflection in History tab
+      addToHistory({
+        symptoms: all,
+        disease: data.disease,
+        severity: data.severity,
+        doctorType: data.doctorType || "General Physician",
+      });
+    } catch (error) {
+      console.error("Error analyzing symptoms:", error);
+      // Fallback or error handling could go here
+    }
+
     setAnalyzing(false);
   };
 
-  const sev = results ? severityConfig[results.severity] : null;
+  const sev = results ? severityConfig[results.severity as Severity] : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -183,6 +209,22 @@ const SymptomAnalysis = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-1.5 col-span-2">
+                  <Label>Location</Label>
+                  <div className="flex gap-2">
+                    <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Bachupally, Hyderabad" className="h-10 rounded-xl" />
+                    <Button variant="outline" className="h-10 px-3 rounded-xl shrink-0" onClick={() => {
+                      if ("geolocation" in navigator) {
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                          // Simple mock: if we use exact coords, we can reverse geocode, but for now we just show coords or ask user
+                          setLocation(`Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)}`);
+                        });
+                      }
+                    }}>
+                      <MapPin className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div className="mt-4 space-y-1.5">
@@ -293,15 +335,50 @@ const SymptomAnalysis = () => {
                     <UserCheck className="w-5 h-5 text-primary" />
                     <h3 className="font-semibold text-foreground">Doctor Consultation</h3>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">Recommended specialist: <span className="font-medium text-foreground">{results.doctorType}</span></p>
+                  <p className="text-sm text-muted-foreground mb-4">Recommended specialist: <span className="font-medium text-foreground">{results.doctorType}</span></p>
+                  
+                  {results.hospitals && results.hospitals.length > 0 && (
+                    <div className="mb-4 space-y-3">
+                      <p className="text-sm font-medium text-foreground">Nearby Hospitals:</p>
+                      {results.hospitals.map((h: any, i: number) => (
+                        <div key={i} className="p-3 rounded-xl bg-muted/50 text-sm">
+                          <p className="font-semibold text-foreground">{h.name}</p>
+                          <p className="text-muted-foreground mt-0.5">{h.area}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                            <span>📍 {h.distance}</span>
+                            <span>⏱ {h.travelTime}</span>
+                            <span>💰 {h.fee}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <Button className="rounded-xl" size="sm" onClick={() => setConsultOpen(true)}>Consult Now</Button>
                 </div>
 
                 <div className="bg-card rounded-2xl card-shadow p-5">
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-4">
                     <MapPin className="w-5 h-5 text-secondary" />
                     <h3 className="font-semibold text-foreground">Pharmacy</h3>
                   </div>
+                  
+                  {results.pharmacies && results.pharmacies.length > 0 && (
+                    <div className="mb-4 space-y-3">
+                      <p className="text-sm font-medium text-foreground">Nearby Pharmacies:</p>
+                      {results.pharmacies.map((p: any, i: number) => (
+                        <div key={i} className="p-3 rounded-xl bg-muted/50 text-sm">
+                          <p className="font-semibold text-foreground">{p.name}</p>
+                          <p className="text-muted-foreground mt-0.5">{p.area}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                            <span>📍 {p.distance}</span>
+                            <span>⏱ {p.deliveryTime} delivery</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex gap-3">
                     <Button variant="outline" className="rounded-xl" size="sm" onClick={() => setPharmacyOpen(true)}>
                       <MapPin className="w-4 h-4 mr-1" /> Find Pharmacy

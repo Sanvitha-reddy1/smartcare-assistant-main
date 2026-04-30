@@ -4,11 +4,12 @@ import { Eye, EyeOff, Loader2, Heart, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", role: "patient" as "patient" | "doctor" | "pharmacist" });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,7 +40,7 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await signup({ fullName: form.fullName, email: form.email, phone: form.phone, password: form.password });
+    await signup({ fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role: form.role });
     setLoading(false);
     toast({ title: "Account created!", description: "Welcome to SmartCare." });
     navigate("/dashboard");
@@ -73,6 +74,20 @@ const Signup = () => {
             <div className="space-y-1.5">
               <Label htmlFor="phone">Phone Number</Label>
               <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" value={form.phone} onChange={(e) => update("phone", e.target.value)} onBlur={() => blur("phone")} className="h-11 rounded-xl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <Select value={form.role} onValueChange={(v: "patient" | "doctor" | "pharmacist") => update("role", v)}>
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="patient">Patient</SelectItem>
+                  <SelectItem value="doctor">Doctor</SelectItem>
+                  <SelectItem value="pharmacist">Pharmacist</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">

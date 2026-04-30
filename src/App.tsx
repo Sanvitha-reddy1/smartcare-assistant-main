@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import SymptomAnalysis from "./pages/SymptomAnalysis";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -24,9 +25,9 @@ const App = () => (
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/analyze" element={<SymptomAnalysis />} />
-            <Route path="/history" element={<History />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/analyze" element={<ProtectedRoute allowedRoles={["patient"]}><SymptomAnalysis /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute allowedRoles={["patient"]}><History /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

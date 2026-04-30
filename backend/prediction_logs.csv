@@ -1,0 +1,23 @@
+Timestamp,Raw_Input,Parsed_Symptoms,Predicted_Disease,Confidence
+2026-04-29 16:25:38,chest pain and breathlessness,"chest_pain,breathlessness",Heart attack,0.99
+2026-04-29 16:26:05,I have itching and skin rash,"skin_rash,itching",General Health Issue,0.47
+2026-04-29 16:26:16,I have itching and skin rash and nodal skin eruptions and patches,"skin_rash,itching,nodal_skin_eruptions",Fungal infection,0.70
+2026-04-29 17:21:43,nausea diarrhea i have stomach pain,"nausea,stomach_pain,diarrhoea",General Health Issue,0.08
+2026-04-29 19:04:16,runny nose i have cold and cough,"cough,runny_nose,chills",General Health Issue,0.20
+2026-04-29 19:05:22,sneezing watery eyes i have cold and,"chills,continuous_sneezing",Allergy,0.57
+2026-04-29 20:29:55,sad and crying,,General Health Issue,0.50
+2026-04-29 20:35:44,nausea i have headache,"headache,nausea",General Health Issue,0.14
+2026-04-29 20:39:32,dizziness i have headache and,"dizziness,headache",General Health Issue,0.17
+2026-04-29 20:40:41,nausea stomach pain,"stomach_pain,nausea",General Health Issue,0.08
+2026-04-29 21:11:20,nausea i have headache,"headache,nausea",General Health Issue,0.14
+2026-04-29 21:12:04,dizziness i have headache,"dizziness,headache",General Health Issue,0.17
+2026-04-29 21:21:43,i have headache,headache,General Health Issue,0.14
+2026-04-29 21:32:10,fever i have dever,high_fever,General Health Issue,0.17
+2026-04-30 00:34:39,headache dizziness i have fever and cough,"dizziness,headache,cough,high_fever",General Health Issue,0.37
+2026-04-30 00:35:37,chills i have fever and,"chills,high_fever",General Health Issue,0.23
+2026-04-30 00:56:18,lower back pain heavy bleeding mood swings i have period cramps,"cramps,back_pain,mood_swings",General Health Issue,0.12
+2026-04-30 01:00:49,i have fever,high_fever,General Health Issue,0.17
+2026-04-30 01:18:39,body aches i have fever,high_fever,General Health Issue,0.17
+2026-04-30 01:23:12,body aches i have fever,high_fever,General Health Issue,0.17
+2026-04-30 01:35:46,fatigue i have fever,"fatigue,high_fever",General Health Issue,0.13
+2026-04-30 01:37:05,headache zasdfgh,headache,General Health Issue,0.14

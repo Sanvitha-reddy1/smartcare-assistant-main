@@ -158,7 +158,7 @@ const BuyMedicinesModal = ({ open, onOpenChange, medicines }: Props) => {
                     <div>
                       <p className="font-semibold text-foreground text-sm">{p.name}</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <MapPin className="w-3 h-3" /> {p.location} • {p.distance}
+                        <MapPin className="w-3 h-3" /> {p.location} • {p.distance} {p.expectedTime && `• ~${p.expectedTime}`}
                       </p>
                     </div>
                     <div>

@@ -141,7 +141,7 @@ const ConsultDoctorModal = ({ open, onOpenChange, doctorType }: Props) => {
                   <MapPin className="w-3 h-3" /> {doc.location}
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" /> {doc.availability}
+                  <Clock className="w-3 h-3" /> {doc.availability} {doc.expectedTime && `• ~${doc.expectedTime}`}
                 </div>
               </div>
             ))
