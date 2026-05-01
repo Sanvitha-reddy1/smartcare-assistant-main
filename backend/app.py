@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pandas as pd
 from pymongo import MongoClient
 import joblib
 from dotenv import load_dotenv
