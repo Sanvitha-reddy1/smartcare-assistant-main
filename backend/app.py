@@ -37,7 +37,7 @@ except Exception as e:
 print("API STARTED")
 
 # ------------------ LOAD MODEL + DATA ------------------
-all_symptoms = list(df.columns[:-1])
+all_symptoms = ["fever","cough","sore throat","runny nose","shortness_of_breath","fatigue","headache","nausea","vomiting","diarrhea","abdominal_pain","chest pain","dizziness","rash","joint pain","muscle pain","loss of taste/smell","congestion","sneezing","wheezing","chills","night sweats","weight loss","swollen lymph nodes","yellowing of skin/eyes","blood in stool","blood in urine","frequent urination","increased thirst","blurred vision","confusion","anxiety","depression","insomnia","hair loss","dry skin","easy bruising","bleeding gums","swelling","redness","itching","painful urination","back pain"]
 
 # ------------------ CLEAN INPUT ------------------
 def clean_input(raw):
