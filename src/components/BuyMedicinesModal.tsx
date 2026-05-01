@@ -57,7 +57,12 @@ const BuyMedicinesModal = ({ open, onOpenChange, medicines }: Props) => {
   }, [open, initialCart]);
 
   const [deliveryType, setDeliveryType] = useState("home");
-  const [address, setAddress] = useState("");
+  const [addressDetails, setAddressDetails] = useState({
+    flatNo: "",
+    street: "",
+    city: "",
+    pincode: ""
+  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -68,7 +73,7 @@ const BuyMedicinesModal = ({ open, onOpenChange, medicines }: Props) => {
         setStep(1);
         setSelectedPharmacy(null);
         setCart(initialCart);
-        setAddress("");
+        setAddressDetails({ flatNo: "", street: "", city: "", pincode: "" });
         setIsSuccess(false);
         setIsProcessing(false);
       }, 300);
@@ -99,7 +104,7 @@ const BuyMedicinesModal = ({ open, onOpenChange, medicines }: Props) => {
           pharmacyName: selectedPharmacy.name,
           medicines: cart.map(item => ({ name: item.name, quantity: item.quantity, price: item.price })),
           totalPrice: finalTotal,
-          deliveryAddress: deliveryType === "home" ? address : "In-store Pickup"
+          deliveryAddress: deliveryType === "home" ? `${addressDetails.flatNo}, ${addressDetails.street}, ${addressDetails.city} - ${addressDetails.pincode}` : "In-store Pickup"
         });
       }
 
@@ -218,14 +223,36 @@ const BuyMedicinesModal = ({ open, onOpenChange, medicines }: Props) => {
               </div>
 
               {deliveryType === "home" && (
-                <div className="space-y-2 animate-fade-in">
+                <div className="space-y-3 animate-fade-in">
                   <Label>Delivery Address</Label>
-                  <Input 
-                    placeholder="Enter your full address" 
-                    value={address} 
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="h-11 rounded-xl"
-                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input 
+                      placeholder="Flat / House No." 
+                      value={addressDetails.flatNo} 
+                      onChange={(e) => setAddressDetails({...addressDetails, flatNo: e.target.value})}
+                      className="h-11 rounded-xl"
+                    />
+                    <Input 
+                      placeholder="Street / Locality" 
+                      value={addressDetails.street} 
+                      onChange={(e) => setAddressDetails({...addressDetails, street: e.target.value})}
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input 
+                      placeholder="City" 
+                      value={addressDetails.city} 
+                      onChange={(e) => setAddressDetails({...addressDetails, city: e.target.value})}
+                      className="h-11 rounded-xl"
+                    />
+                    <Input 
+                      placeholder="PIN Code" 
+                      value={addressDetails.pincode} 
+                      onChange={(e) => setAddressDetails({...addressDetails, pincode: e.target.value})}
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -248,7 +275,7 @@ const BuyMedicinesModal = ({ open, onOpenChange, medicines }: Props) => {
               <Button 
                 className="w-full rounded-xl h-11" 
                 onClick={handleConfirm}
-                disabled={isProcessing || (deliveryType === "home" && address.trim().length < 5)}
+                disabled={isProcessing || (deliveryType === "home" && (!addressDetails.flatNo || !addressDetails.street || !addressDetails.city || !addressDetails.pincode))}
               >
                 {isProcessing ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing Order...</>

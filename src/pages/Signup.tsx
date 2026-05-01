@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", role: "patient" as "patient" | "doctor" | "pharmacist" });
+  const [doctorForm, setDoctorForm] = useState({ hospitalName: "", specialization: "", experience: "" });
+  const [pharmacistForm, setPharmacistForm] = useState({ pharmacyName: "", licenseNumber: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,14 @@ const Signup = () => {
   const hasNumber = /\d/.test(form.password);
   const hasLength = form.password.length >= 6;
   const passwordsMatch = form.password === form.confirmPassword && form.confirmPassword.length > 0;
-  const allFilled = form.fullName.trim() && form.email && form.phone && form.password && form.confirmPassword;
+  
+  let allFilled = form.fullName.trim() && form.email && form.phone && form.password && form.confirmPassword;
+  if (form.role === "doctor") {
+    allFilled = allFilled && doctorForm.hospitalName.trim() && doctorForm.specialization.trim() && doctorForm.experience.trim();
+  } else if (form.role === "pharmacist") {
+    allFilled = allFilled && pharmacistForm.pharmacyName.trim() && pharmacistForm.licenseNumber.trim();
+  }
+  
   const isFormValid = allFilled && validEmail && hasUpper && hasLower && hasNumber && hasLength && passwordsMatch;
 
   const PasswordRule = ({ met, label }: { met: boolean; label: string }) => (
@@ -40,10 +49,20 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await signup({ fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role: form.role });
+    const signupData = {
+      fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role: form.role,
+      ...(form.role === "doctor" && doctorForm),
+      ...(form.role === "pharmacist" && pharmacistForm)
+    };
+    const success = await signup(signupData);
     setLoading(false);
-    toast({ title: "Account created!", description: "Welcome to SmartCare." });
-    navigate("/dashboard");
+    
+    if (success) {
+      toast({ title: "Account created!", description: "Welcome to SmartCare." });
+      navigate("/dashboard");
+    } else {
+      toast({ title: "Signup Failed", description: "Email might already be in use.", variant: "destructive" });
+    }
   };
 
   return (
@@ -89,6 +108,38 @@ const Signup = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {form.role === "doctor" && (
+              <div className="space-y-4 bg-muted/30 p-4 rounded-xl border animate-fade-in">
+                <div className="space-y-1.5">
+                  <Label htmlFor="hospitalName">Hospital / Clinic Name</Label>
+                  <Input id="hospitalName" placeholder="e.g. Apollo Super Specialty Hospital" value={doctorForm.hospitalName} onChange={(e) => setDoctorForm({...doctorForm, hospitalName: e.target.value})} className="h-11 rounded-xl bg-background" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="specialization">Specialization</Label>
+                    <Input id="specialization" placeholder="e.g. Cardiologist" value={doctorForm.specialization} onChange={(e) => setDoctorForm({...doctorForm, specialization: e.target.value})} className="h-11 rounded-xl bg-background" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="experience">Experience (Years)</Label>
+                    <Input id="experience" type="number" placeholder="e.g. 10" value={doctorForm.experience} onChange={(e) => setDoctorForm({...doctorForm, experience: e.target.value})} className="h-11 rounded-xl bg-background" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {form.role === "pharmacist" && (
+              <div className="space-y-4 bg-muted/30 p-4 rounded-xl border animate-fade-in">
+                <div className="space-y-1.5">
+                  <Label htmlFor="pharmacyName">Pharmacy Name</Label>
+                  <Input id="pharmacyName" placeholder="e.g. MedPlus Pharmacy" value={pharmacistForm.pharmacyName} onChange={(e) => setPharmacistForm({...pharmacistForm, pharmacyName: e.target.value})} className="h-11 rounded-xl bg-background" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="licenseNumber">License Number</Label>
+                  <Input id="licenseNumber" placeholder="Enter pharmacy license number" value={pharmacistForm.licenseNumber} onChange={(e) => setPharmacistForm({...pharmacistForm, licenseNumber: e.target.value})} className="h-11 rounded-xl bg-background" />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>

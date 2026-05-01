@@ -141,14 +141,14 @@ disease_data = {
     },
     "Typhoid": {
         "doctor": "General Physician",
-        "medicines": [{"name": "Antibiotics", "usage": "Kill bacteria", "timing": "Full course"}],
+        "medicines": [{"name": "Azithromycin", "usage": "Kill bacteria", "timing": "Full course"}],
         "remedies": [{"name": "Soft Diet", "preparation": "Easily digestible food", "measurement": "Meals"}],
         "precautions": ["Drink boiled water", "Wash hands", "Avoid raw vegetables"],
         "severity": "moderate"
     },
     "Viral Fever": {
         "doctor": "General Physician",
-        "medicines": [{"name": "Antipyretic", "usage": "Fever reduction", "timing": "When feverish"}],
+        "medicines": [{"name": "Paracetamol (Dolo 650)", "usage": "Fever reduction", "timing": "When feverish"}],
         "remedies": [{"name": "Sponge Bath", "preparation": "Tepid water", "measurement": "As needed"}],
         "precautions": ["Rest completely", "Eat light food", "Stay hydrated"],
         "severity": "moderate"
@@ -162,7 +162,7 @@ disease_data = {
     },
     "Malaria": {
         "doctor": "General Physician",
-        "medicines": [{"name": "Antimalarial", "usage": "Kill parasite", "timing": "Full course"}],
+        "medicines": [{"name": "Artemether-Lumefantrine", "usage": "Kill parasite", "timing": "Full course"}],
         "remedies": [{"name": "Rest", "preparation": "Complete bed rest", "measurement": "Continuous"}],
         "precautions": ["Use mosquito repellent", "Wear long sleeves", "Keep surroundings dry"],
         "severity": "moderate"
@@ -224,7 +224,7 @@ disease_data = {
     # 9. Genitourinary
     "UTI": {
         "doctor": "Urologist",
-        "medicines": [{"name": "Antibiotics", "usage": "Clear infection", "timing": "Full course"}],
+        "medicines": [{"name": "Nitrofurantoin", "usage": "Clear infection", "timing": "Full course"}],
         "remedies": [{"name": "Cranberry Juice", "preparation": "Unsweetened", "measurement": "2 glasses"}],
         "precautions": ["Drink lots of water", "Don't hold urine", "Maintain hygiene"],
         "severity": "moderate"
@@ -248,7 +248,7 @@ disease_data = {
 
     "General Health Issue": {
         "doctor": "General Physician",
-        "medicines": [{"name": "Multivitamins", "usage": "General wellness", "timing": "Daily"}],
+        "medicines": [{"name": "Multivitamins (Zincovit / Supradyn)", "usage": "General wellness", "timing": "Daily"}],
         "remedies": [{"name": "Rest", "preparation": "Get adequate sleep", "measurement": "8 hours"}],
         "precautions": ["Eat a balanced diet", "Stay hydrated", "Monitor symptoms"],
         "severity": "mild"

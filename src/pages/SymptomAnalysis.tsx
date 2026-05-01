@@ -216,9 +216,17 @@ const SymptomAnalysis = () => {
                     <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Bachupally, Hyderabad" className="h-10 rounded-xl" />
                     <Button variant="outline" className="h-10 px-3 rounded-xl shrink-0" onClick={() => {
                       if ("geolocation" in navigator) {
-                        navigator.geolocation.getCurrentPosition((pos) => {
-                          // Simple mock: if we use exact coords, we can reverse geocode, but for now we just show coords or ask user
-                          setLocation(`Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)}`);
+                        navigator.geolocation.getCurrentPosition(async (pos) => {
+                          const lat = pos.coords.latitude;
+                          const lon = pos.coords.longitude;
+                          try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                            const data = await res.json();
+                            const area = data.address.suburb || data.address.neighbourhood || data.address.city || data.display_name;
+                            setLocation(area);
+                          } catch (e) {
+                            setLocation(`Lat: ${lat.toFixed(4)}, Lng: ${lon.toFixed(4)}`);
+                          }
                         });
                       }
                     }}>

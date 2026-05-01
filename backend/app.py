@@ -84,94 +84,7 @@ def get_related_symptoms(input_symptoms):
         
     return list(related)[:5]
 
-# ------------------ DISEASE DATA ------------------
-disease_data = {
-    "Common Cold": {
-        "doctor": "General Physician",
-        "medicines": [
-            {"name": "Paracetamol", "usage": "Fever & pain", "timing": "After food"},
-            {"name": "Cetirizine", "usage": "Cold & allergy", "timing": "Night"}
-        ],
-        "remedies": [
-            {"name": "Steam Inhalation", "preparation": "Hot water steam", "measurement": "2 times daily"},
-            {"name": "Ginger Tea", "preparation": "Boil ginger in water", "measurement": "2 cups daily"}
-        ]
-    },
-    "Allergy": {
-        "doctor": "Allergist",
-        "medicines": [
-            {"name": "Loratadine", "usage": "Allergy relief", "timing": "Morning"},
-            {"name": "Hydrocortisone Cream", "usage": "Rash/Itching", "timing": "Apply twice daily"}
-        ],
-        "remedies": [
-            {"name": "Cold Compress", "preparation": "Apply ice pack to rash", "measurement": "15 mins"},
-            {"name": "Oatmeal Bath", "preparation": "Soak in colloidal oatmeal", "measurement": "20 mins"}
-        ]
-    },
-    "Food Poisoning": {
-        "doctor": "General Physician / Gastroenterologist",
-        "medicines": [
-            {"name": "ORS (Oral Rehydration Salts)", "usage": "Hydration", "timing": "After every loose motion"},
-            {"name": "Loperamide", "usage": "Diarrhea control", "timing": "As prescribed"}
-        ],
-        "remedies": [
-            {"name": "Hydration", "preparation": "Drink clear fluids", "measurement": "Constantly"},
-            {"name": "BRAT Diet", "preparation": "Bananas, Rice, Applesauce, Toast", "measurement": "Small portions"}
-        ]
-    },
-    "Migraine": {
-        "doctor": "Neurologist",
-        "medicines": [
-            {"name": "Sumatriptan", "usage": "Migraine relief", "timing": "Onset of headache"},
-            {"name": "Naproxen", "usage": "Pain relief", "timing": "After food"}
-        ],
-        "remedies": [
-            {"name": "Dark Room Rest", "preparation": "Rest in a quiet, dark room", "measurement": "As needed"},
-            {"name": "Cold Pack", "preparation": "Apply to forehead", "measurement": "15 mins"}
-        ]
-    },
-    "Gastritis": {
-        "doctor": "Gastroenterologist",
-        "medicines": [
-            {"name": "Omeprazole", "usage": "Acid control", "timing": "Before breakfast"},
-            {"name": "Antacid", "usage": "Relief from acidity", "timing": "After meals"}
-        ],
-        "remedies": [
-            {"name": "Banana & Rice", "preparation": "Eat light food", "measurement": "Small portions"},
-            {"name": "Ginger Water", "preparation": "Grate ginger in warm water", "measurement": "Sips throughout day"}
-        ]
-    },
-    "Menstrual Cramps": {
-        "doctor": "Gynecologist",
-        "medicines": [
-            {"name": "Ibuprofen", "usage": "Pain relief", "timing": "After food"}
-        ],
-        "remedies": [
-            {"name": "Hot Water Bag", "preparation": "Apply on abdomen", "measurement": "15 mins"},
-            {"name": "Light Exercise", "preparation": "Stretching / yoga", "measurement": "Daily"}
-        ]
-    },
-    "Heart Issue": {
-        "doctor": "Cardiologist",
-        "medicines": [
-            {"name": "Aspirin", "usage": "Emergency use", "timing": "Chew immediately if suspected heart attack"}
-        ],
-        "remedies": [
-            {"name": "Rest Immediately", "preparation": "Stop all physical activity", "measurement": "Now"},
-            {"name": "Call Emergency", "preparation": "Seek immediate medical help", "measurement": "Urgent"}
-        ]
-    },
-    "General Health Issue": {
-        "doctor": "General Physician",
-        "medicines": [
-            {"name": "General Medication", "usage": "As prescribed", "timing": "Consult doctor"}
-        ],
-        "remedies": [
-            {"name": "Rest and Hydration", "preparation": "Drink plenty of water and rest", "measurement": "Daily"},
-            {"name": "Maintain Hygiene", "preparation": "Keep surroundings clean", "measurement": "Always"}
-        ]
-    }
-}
+from disease_data import get_disease_info
 
 # ------------------ MAIN API ------------------
 @app.route('/analyze', methods=['POST'])
@@ -192,18 +105,22 @@ def analyze():
     # Step 2: RULE BASED (strong layer)
     if "fever" in symptoms and "cough" in symptoms:
         prediction = "Common Cold"
+    elif "fever" in symptoms:
+        prediction = "Viral Fever"
     elif "itching" in symptoms or "rash" in symptoms:
         prediction = "Allergy"
     elif "vomiting" in symptoms and "diarrhea" in symptoms:
         prediction = "Food Poisoning"
     elif "headache" in symptoms and ("sensitivity" in symptoms or "light" in symptoms):
         prediction = "Migraine"
+    elif "headache" in symptoms:
+        prediction = "Migraine"
     elif "abdominal_pain" in symptoms or "nausea" in symptoms or "stomach" in symptoms:
         prediction = "Gastritis"
     elif "period" in symptoms or "cramps" in symptoms:
         prediction = "Menstrual Cramps"
     elif "chest" in symptoms and "pain" in symptoms:
-        prediction = "Heart Issue"
+        prediction = "Heart attack"
     else:
         prediction = "General Health Issue"
 
@@ -219,16 +136,7 @@ def analyze():
     related = get_related_symptoms(symptoms)
 
     # Step 5: Dynamic Data
-    info = disease_data.get(prediction, {
-        "doctor": "General Physician",
-        "medicines": [
-            {"name": "General Medication", "usage": "As prescribed", "timing": "Consult doctor"}
-        ],
-        "remedies": [
-            {"name": "Rest and Hydration", "preparation": "Drink plenty of water and rest", "measurement": "Daily"},
-            {"name": "Maintain Hygiene", "preparation": "Keep surroundings clean", "measurement": "Always"}
-        ]
-    })
+    info = get_disease_info(prediction)
 
     # Step 6: Save History
     if db is not None:
@@ -332,8 +240,16 @@ def signup():
         "password": hashed_password,
         "role": role,
         "location": location,
-        "createdAt": datetime.datetime.utcnow()
+        "createdAt": datetime.datetime.now(datetime.timezone.utc)
     }
+
+    if role == "doctor":
+        new_user["hospitalName"] = data.get("hospitalName", "")
+        new_user["specialization"] = data.get("specialization", "")
+        new_user["experience"] = data.get("experience", "")
+    elif role == "pharmacist":
+        new_user["pharmacyName"] = data.get("pharmacyName", "")
+        new_user["licenseNumber"] = data.get("licenseNumber", "")
 
     try:
         users_collection.insert_one(new_user)
@@ -385,7 +301,12 @@ def login():
             "gender": user.get("gender", ""),
             "height": user.get("height", ""),
             "weight": user.get("weight", ""),
-            "phone": user.get("phone", "")
+            "phone": user.get("phone", ""),
+            "hospitalName": user.get("hospitalName", ""),
+            "specialization": user.get("specialization", ""),
+            "experience": user.get("experience", ""),
+            "pharmacyName": user.get("pharmacyName", ""),
+            "licenseNumber": user.get("licenseNumber", "")
         }
     }), 200
 
@@ -423,6 +344,44 @@ def get_history():
     if db is None:
         return jsonify({"error": "Database connection failed"}), 500
     data = list(history_collection.find({}, {"_id": 0}))
+    return jsonify(data)
+
+@app.route('/doctor/history', methods=['POST'])
+def add_doctor_history():
+    if db is None:
+        return jsonify({"error": "Database connection failed"}), 500
+    data = request.json
+    try:
+        data["createdAt"] = datetime.datetime.now(datetime.timezone.utc)
+        appointments_collection.insert_one(data)
+        return jsonify({"message": "Appointment accepted successfully"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/doctor/history/<user_id>', methods=['GET'])
+def get_doctor_history(user_id):
+    if db is None:
+        return jsonify({"error": "Database connection failed"}), 500
+    data = list(appointments_collection.find({"doctorId": user_id}, {"_id": 0}).sort("createdAt", -1))
+    return jsonify(data)
+
+@app.route('/pharmacist/history', methods=['POST'])
+def add_pharmacist_history():
+    if db is None:
+        return jsonify({"error": "Database connection failed"}), 500
+    data = request.json
+    try:
+        data["createdAt"] = datetime.datetime.now(datetime.timezone.utc)
+        orders_collection.insert_one(data)
+        return jsonify({"message": "Order delivered successfully"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/pharmacist/history/<user_id>', methods=['GET'])
+def get_pharmacist_history(user_id):
+    if db is None:
+        return jsonify({"error": "Database connection failed"}), 500
+    data = list(orders_collection.find({"pharmacistId": user_id}, {"_id": 0}).sort("createdAt", -1))
     return jsonify(data)
 
 

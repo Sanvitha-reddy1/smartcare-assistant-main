@@ -12,13 +12,31 @@ interface User {
   weight?: string;
   avatarUrl?: string;
   location?: string;
+  hospitalName?: string;
+  specialization?: string;
+  experience?: string;
+  pharmacyName?: string;
+  licenseNumber?: string;
+}
+
+interface SignupData {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: "patient" | "doctor" | "pharmacist";
+  hospitalName?: string;
+  specialization?: string;
+  experience?: string;
+  pharmacyName?: string;
+  licenseNumber?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (data: { fullName: string; email: string; phone: string; password: string; role: "patient" | "doctor" | "pharmacist" }) => Promise<boolean>;
+  signup: (data: SignupData) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
 }
@@ -37,6 +55,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         phone: parsed.phone || "",
         role: parsed.role || "patient",
         location: parsed.location || "",
+        hospitalName: parsed.hospitalName,
+        specialization: parsed.specialization,
+        experience: parsed.experience,
+        pharmacyName: parsed.pharmacyName,
+        licenseNumber: parsed.licenseNumber,
       };
     }
     return null;
@@ -72,6 +95,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         gender: data.user.gender || undefined,
         height: data.user.height || undefined,
         weight: data.user.weight || undefined,
+        hospitalName: data.user.hospitalName,
+        specialization: data.user.specialization,
+        experience: data.user.experience,
+        pharmacyName: data.user.pharmacyName,
+        licenseNumber: data.user.licenseNumber,
       };
 
       setUser(loggedInUser);
@@ -82,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signup = async (data: { fullName: string; email: string; phone: string; password: string; role: "patient" | "doctor" | "pharmacist" }): Promise<boolean> => {
+  const signup = async (data: SignupData): Promise<boolean> => {
     try {
       const res = await fetch("http://127.0.0.1:5000/signup", {
         method: "POST",
@@ -91,7 +119,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: data.fullName,
           email: data.email,
           password: data.password,
-          role: data.role
+          role: data.role,
+          hospitalName: data.hospitalName,
+          specialization: data.specialization,
+          experience: data.experience,
+          pharmacyName: data.pharmacyName,
+          licenseNumber: data.licenseNumber,
         }),
       });
 

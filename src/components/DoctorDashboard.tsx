@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, Activity, User, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const initialMockRequests = [
@@ -15,6 +15,17 @@ const DoctorDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [requests, setRequests] = useState(initialMockRequests);
+  const [activeTab, setActiveTab] = useState<"requests" | "history">("requests");
+  const [history, setHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`http://127.0.0.1:5000/doctor/history/${user.id}`)
+        .then(res => res.json())
+        .then(data => setHistory(data))
+        .catch(err => console.error("Failed to load history", err));
+    }
+  }, [user]);
 
   if (!user) return null;
 
@@ -23,12 +34,36 @@ const DoctorDashboard = () => {
     navigate("/login");
   };
 
-  const handleAccept = (id: number) => {
-    setRequests(prev => prev.filter(r => r.id !== id));
-    toast({
-      title: "Appointment Accepted",
-      description: "The patient has been notified.",
-    });
+  const handleAccept = async (id: number) => {
+    const req = requests.find(r => r.id === id);
+    if (!req) return;
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/doctor/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctorId: user?.id,
+          patientName: req.patient,
+          time: req.time,
+          status: "accepted"
+        })
+      });
+
+      if (res.ok) {
+        setRequests(prev => prev.filter(r => r.id !== id));
+        // Refresh history
+        const newHist = await fetch(`http://127.0.0.1:5000/doctor/history/${user?.id}`).then(r => r.json());
+        setHistory(newHist);
+
+        toast({
+          title: "Appointment Accepted",
+          description: "The patient has been notified.",
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleReject = (id: number) => {
@@ -70,8 +105,23 @@ const DoctorDashboard = () => {
           
           <div className="md:col-span-2 space-y-6">
             <div className="bg-card rounded-2xl card-shadow p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Consultation Requests</h3>
-              <div className="space-y-4">
+              <div className="flex items-center gap-4 border-b border-border mb-4">
+                <button 
+                  className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'requests' ? 'border-b-2 border-primary text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  onClick={() => setActiveTab('requests')}
+                >
+                  Consultation Requests
+                </button>
+                <button 
+                  className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'history' ? 'border-b-2 border-primary text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  onClick={() => setActiveTab('history')}
+                >
+                  Appointment History
+                </button>
+              </div>
+
+              {activeTab === 'requests' ? (
+                <div className="space-y-4">
                 {requests.length === 0 ? (
                   <p className="text-sm text-muted-foreground p-4 text-center">No pending consultation requests.</p>
                 ) : (
@@ -93,6 +143,27 @@ const DoctorDashboard = () => {
                   ))
                 )}
               </div>
+              ) : (
+                <div className="space-y-4">
+                  {history.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-4 text-center">No appointment history found.</p>
+                  ) : (
+                    history.map((hist, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/10">
+                        <div>
+                          <p className="font-medium text-foreground">{hist.patientName}</p>
+                          <p className="text-sm text-muted-foreground">Time: {hist.time}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-severity-mild/10 text-severity-mild">
+                            Accepted
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
