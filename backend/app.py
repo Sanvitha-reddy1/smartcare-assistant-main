@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import pandas as pd
 from pymongo import MongoClient
+import joblib
 from dotenv import load_dotenv
 import os
 import re
@@ -36,7 +38,7 @@ except Exception as e:
 print("API STARTED")
 
 # ------------------ LOAD MODEL + DATA ------------------
-# Removed machine learning models as requested
+all_symptoms = list(df.columns[:-1])
 
 # ------------------ CLEAN INPUT ------------------
 def clean_input(raw):
@@ -66,35 +68,74 @@ mapping = {
 def map_symptoms(symptoms):
     return [mapping.get(s, s) for s in symptoms]
 
-# ------------------ RELATED SYMPTOMS ------------------
-def get_related_symptoms(input_symptoms):
-    related = set()
-    if "fever" in input_symptoms or "cough" in input_symptoms:
-        related.update(["headache", "fatigue", "sore throat"])
-    if "abdominal_pain" in input_symptoms or "nausea" in input_symptoms:
-        related.update(["vomiting", "diarrhea", "loss of appetite"])
-    if "period" in input_symptoms or "cramps" in input_symptoms:
-        related.update(["back pain", "bloating", "mood swings"])
-    if "itching" in input_symptoms or "rash" in input_symptoms:
-        related.update(["redness", "swelling", "dry skin"])
-    if "headache" in input_symptoms or "sensitivity" in input_symptoms:
-        related.update(["nausea", "dizziness", "blurred vision"])
-    if "chest" in input_symptoms or "pain" in input_symptoms:
-        related.update(["shortness of breath", "sweating", "fatigue"])
-        
-    return list(related)[:5]
+# ------------------ VECTORIZE ------------------
+# def vectorize(user_symptoms):
+#     return [1 if symptom in user_symptoms else 0 for symptom in all_symptoms]
 
-from disease_data import get_disease_info
+# ------------------ RELATED SYMPTOMS ------------------
+# def get_related_symptoms(input_symptoms):
+#     scores = []
+
+#     for _, row in df.iterrows():
+#         row_symptoms = [col for col in all_symptoms if row[col] == 1]
+
+#         match_count = len(set(input_symptoms) & set(row_symptoms))
+
+#         if match_count > 0:
+#             scores.append((match_count, row_symptoms))
+
+#     scores.sort(reverse=True, key=lambda x: x[0])
+
+#     related = set()
+#     for _, sym_list in scores[:5]:
+#         related.update(sym_list)
+
+#     return list(related)[:8]
+
+# ------------------ DISEASE DATA ------------------
+disease_data = {
+    "Common Cold": {
+        "doctor": "General Physician",
+        "medicines": [
+            {"name": "Paracetamol", "usage": "Fever & pain", "timing": "After food"},
+            {"name": "Cetirizine", "usage": "Cold & allergy", "timing": "Night"}
+        ],
+        "remedies": [
+            {"name": "Steam Inhalation", "preparation": "Hot water steam", "measurement": "2 times daily"},
+            {"name": "Ginger Tea", "preparation": "Boil ginger in water", "measurement": "2 cups daily"}
+        ]
+    },
+
+    "Gastritis": {
+        "doctor": "Gastroenterologist",
+        "medicines": [
+            {"name": "Omeprazole", "usage": "Acid control", "timing": "Before breakfast"},
+            {"name": "Antacid", "usage": "Relief from acidity", "timing": "After meals"}
+        ],
+        "remedies": [
+            {"name": "Banana & Rice", "preparation": "Eat light food", "measurement": "Small portions"},
+            {"name": "Ginger Water", "preparation": "Grate ginger in warm water", "measurement": "Sips throughout day"}
+        ]
+    },
+
+    "Menstrual Cramps": {
+        "doctor": "Gynecologist",
+        "medicines": [
+            {"name": "Ibuprofen", "usage": "Pain relief", "timing": "After food"}
+        ],
+        "remedies": [
+            {"name": "Hot Water Bag", "preparation": "Apply on abdomen", "measurement": "15 mins"},
+            {"name": "Light Exercise", "preparation": "Stretching / yoga", "measurement": "Daily"}
+        ]
+    }
+}
 
 # ------------------ MAIN API ------------------
 @app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.json
-    raw = data.get('symptoms', [])
+    raw = data['symptoms']
     userId = data.get('userId')  # Can be None for guests
-    location = data.get("location", "Unknown Area")
-    if not location.strip():
-        location = "Unknown Area"
 
     # Step 1: Clean + Map
     symptoms = clean_input(raw)
@@ -103,27 +144,20 @@ def analyze():
     print("FINAL SYMPTOMS:", symptoms)
 
     # Step 2: RULE BASED (strong layer)
-    if "fever" in symptoms and "cough" in symptoms:
-        prediction = "Common Cold"
-    elif "fever" in symptoms:
-        prediction = "Viral Fever"
-    elif "itching" in symptoms or "rash" in symptoms:
-        prediction = "Allergy"
-    elif "vomiting" in symptoms and "diarrhea" in symptoms:
-        prediction = "Food Poisoning"
-    elif "headache" in symptoms and ("sensitivity" in symptoms or "light" in symptoms):
-        prediction = "Migraine"
-    elif "headache" in symptoms:
-        prediction = "Migraine"
-    elif "abdominal_pain" in symptoms or "nausea" in symptoms or "stomach" in symptoms:
-        prediction = "Gastritis"
-    elif "period" in symptoms or "cramps" in symptoms:
-        prediction = "Menstrual Cramps"
-    elif "chest" in symptoms and "pain" in symptoms:
-        prediction = "Heart attack"
-    else:
-        prediction = "General Health Issue"
+    # if "fever" in symptoms and "cough" in symptoms:
+    #     prediction = "Common Cold"
 
+    # elif "abdominal_pain" in symptoms or "nausea" in symptoms:
+    #     prediction = "Gastritis"
+
+    # elif "period" in symptoms or "cramps" in symptoms:
+    #     prediction = "Menstrual Cramps"
+
+    # else:
+    #     vector = vectorize(symptoms)
+    #     prediction = model.predict([vector])[0]
+
+    
     # Step 3: Severity
     if "chest" in symptoms:
         severity = "critical"
@@ -136,7 +170,16 @@ def analyze():
     related = get_related_symptoms(symptoms)
 
     # Step 5: Dynamic Data
-    info = get_disease_info(prediction)
+    info = disease_data.get(prediction, {
+        "doctor": "General Physician",
+        "medicines": [
+            {"name": "General Medication", "usage": "As prescribed", "timing": "Consult doctor"}
+        ],
+        "remedies": [
+            {"name": "Rest and Hydration", "preparation": "Drink plenty of water and rest", "measurement": "Daily"},
+            {"name": "Maintain Hygiene", "preparation": "Keep surroundings clean", "measurement": "Always"}
+        ]
+    })
 
     # Step 6: Save History
     if db is not None:
@@ -152,38 +195,6 @@ def analyze():
         except Exception as e:
             print("Error saving history:", e)
 
-    mock_hospitals = [
-        {
-            "name": "Apollo Super Specialty Hospital",
-            "area": location,
-            "distance": "2.5 km",
-            "travelTime": "10 mins",
-            "fee": "₹500"
-        },
-        {
-            "name": "Care Hospitals",
-            "area": location,
-            "distance": "4.2 km",
-            "travelTime": "15 mins",
-            "fee": "₹800"
-        }
-    ]
-
-    mock_pharmacies = [
-        {
-            "name": "MedPlus Pharmacy",
-            "area": location,
-            "distance": "1.0 km",
-            "deliveryTime": "30 mins"
-        },
-        {
-            "name": "Apollo Pharmacy",
-            "area": location,
-            "distance": "1.5 km",
-            "deliveryTime": "45 mins"
-        }
-    ]
-
     # Step 7: Response
     return jsonify({
         "disease": prediction,
@@ -191,9 +202,7 @@ def analyze():
         "doctorType": info["doctor"],
         "relatedSymptoms": related,
         "remedies": info["remedies"],
-        "medicines": info["medicines"],
-        "hospitals": mock_hospitals,
-        "pharmacies": mock_pharmacies
+        "medicines": info["medicines"]
     })
 
 
@@ -240,16 +249,8 @@ def signup():
         "password": hashed_password,
         "role": role,
         "location": location,
-        "createdAt": datetime.datetime.now(datetime.timezone.utc)
+        "createdAt": datetime.datetime.utcnow()
     }
-
-    if role == "doctor":
-        new_user["hospitalName"] = data.get("hospitalName", "")
-        new_user["specialization"] = data.get("specialization", "")
-        new_user["experience"] = data.get("experience", "")
-    elif role == "pharmacist":
-        new_user["pharmacyName"] = data.get("pharmacyName", "")
-        new_user["licenseNumber"] = data.get("licenseNumber", "")
 
     try:
         users_collection.insert_one(new_user)
@@ -271,22 +272,7 @@ def login():
 
     user = users_collection.find_one({"email": email})
     
-    if not user:
-        return jsonify({"error": "Invalid credentials"}), 401
-    
-    # Handle both plain text (legacy) and hashed passwords securely
-    is_valid_password = False
-    if "password" in user:
-        if user["password"] == password:
-            is_valid_password = True
-        else:
-            try:
-                if check_password_hash(user["password"], password):
-                    is_valid_password = True
-            except ValueError:
-                pass # Not a valid hash format
-                
-    if not is_valid_password:
+    if not user or not check_password_hash(user["password"], password):
         return jsonify({"error": "Invalid credentials"}), 401
 
     return jsonify({
@@ -301,12 +287,7 @@ def login():
             "gender": user.get("gender", ""),
             "height": user.get("height", ""),
             "weight": user.get("weight", ""),
-            "phone": user.get("phone", ""),
-            "hospitalName": user.get("hospitalName", ""),
-            "specialization": user.get("specialization", ""),
-            "experience": user.get("experience", ""),
-            "pharmacyName": user.get("pharmacyName", ""),
-            "licenseNumber": user.get("licenseNumber", "")
+            "phone": user.get("phone", "")
         }
     }), 200
 
@@ -346,45 +327,8 @@ def get_history():
     data = list(history_collection.find({}, {"_id": 0}))
     return jsonify(data)
 
-@app.route('/doctor/history', methods=['POST'])
-def add_doctor_history():
-    if db is None:
-        return jsonify({"error": "Database connection failed"}), 500
-    data = request.json
-    try:
-        data["createdAt"] = datetime.datetime.now(datetime.timezone.utc)
-        appointments_collection.insert_one(data)
-        return jsonify({"message": "Appointment accepted successfully"}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/doctor/history/<user_id>', methods=['GET'])
-def get_doctor_history(user_id):
-    if db is None:
-        return jsonify({"error": "Database connection failed"}), 500
-    data = list(appointments_collection.find({"doctorId": user_id}, {"_id": 0}).sort("createdAt", -1))
-    return jsonify(data)
-
-@app.route('/pharmacist/history', methods=['POST'])
-def add_pharmacist_history():
-    if db is None:
-        return jsonify({"error": "Database connection failed"}), 500
-    data = request.json
-    try:
-        data["createdAt"] = datetime.datetime.now(datetime.timezone.utc)
-        orders_collection.insert_one(data)
-        return jsonify({"message": "Order delivered successfully"}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/pharmacist/history/<user_id>', methods=['GET'])
-def get_pharmacist_history(user_id):
-    if db is None:
-        return jsonify({"error": "Database connection failed"}), 500
-    data = list(orders_collection.find({"pharmacistId": user_id}, {"_id": 0}).sort("createdAt", -1))
-    return jsonify(data)
-
 
 # ------------------ RUN ------------------
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
